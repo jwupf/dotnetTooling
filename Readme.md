@@ -4,7 +4,7 @@ This repository sums up stuff I learned about .net 6.0 and needed infrastructure
 
 Right now I will focus on setting infrastructure up, so the code will be bare bones.
 
-## Compiler tool chain
+## Building tool chain
 
 ### Build the tool chain
 
@@ -13,16 +13,39 @@ You need to build the final container with your own user to have the GIS/UID mat
 If you are lazy, and you only have one user on your system and if that user/group has a ID of 1000 or if you are on windows(not inside a WSL container), you can run:
 
 ````pwsh
-docker build -t dotnet_toolchain -f Dockerfile --target base .
+docker image build -t dotnet_toolchain -f Dockerfile --target base .
 ````
 
 If you run the command inside a linux environment I highly suggest to run it like this:
 
 ````pwsh
-docker build -f Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain --target base .
+docker image build -f Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain --target base .
 ````
 
-### Using the tool chain
+### Debugging failing builds
+
+If the build fails and you need to know the intermediate container ID for debugging purpose, set the environment variable DOCKER_BUILDKIT to zero, like so in bash:
+
+````bash
+DOCKER_BUILDKIT=0 docker image build -f _toolchain/Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) --target base .
+````
+
+Or in powershell set the environment variable first and optionally delete later:
+
+````pwsh
+$env:DOCKER_BUILDKIT=0 
+docker image build -f _toolchain/Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) --target base .
+````
+
+The run a interactive session within the last successfull layer, have a look around and try the failing command:
+
+````pwsh
+docker run --rm -it <ID> bash -il
+````
+
+Now you are in a interactive login shell.
+
+### Using the tool chain for local results
 
 The examples expect you to be in the (project) directory you want to work with.
 
@@ -72,4 +95,18 @@ The you can kill it with:
 
 ````pwsh
 docker kill myServerApp
+````
+
+### Using the tool chain to create a product image
+
+Without specifying the product you want to build the app 'myConsoleApp' will be build with the following command line:
+
+````pwsh
+docker image build -f _toolchain/Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t product .
+````
+
+This created a local image that is tagged with 'product' and you can run the bundled app with:
+
+````pwsh
+docker run product /app/myConsoleApp
 ````
