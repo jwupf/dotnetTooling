@@ -1,8 +1,12 @@
-# using this example
+# About this example
 
-## tool chain
+This repository sums up stuff I learned about .net 6.0 and needed infrastructure. The code inside this repository are examples to highlight some things, but are not meant to be used for anything usefull. I might add more complex examples later , if they are needed to bring a point across. 
 
-### build the tool chain
+Right now I will focus on setting infrastructure up, so the code will be bare bones.
+
+## Compiler tool chain
+
+### Build the tool chain
 
 You need to build the final container with your own user to have the GIS/UID match inside the container with yours outside of it. This ensures that you can use the created files afterwards. 
 
@@ -18,7 +22,7 @@ If you run the command inside a linux environment I highly suggest to run it lik
 docker build -f Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain  .
 ````
 
-### using the tool chain
+### Using the tool chain
 
 The examples expect you to be in the (project) directory you want to work with.
 
