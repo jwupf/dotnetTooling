@@ -97,7 +97,7 @@ The you can kill it with:
 docker kill myServerApp
 ````
 
-### Using the tool chain to create a product image
+### Using the tool chain to create a produce image in developer mode
 
 Without specifying the product you want to build the app 'myConsoleApp' will be build with the following command line:
 
@@ -109,4 +109,10 @@ This created a local image that is tagged with 'product' and you can run the bun
 
 ````pwsh
 docker run product /app/myConsoleApp
+````
+
+If the app is based on asp.net, run it as follows:
+
+````pwsh
+docker run -it --rm -p 8000:80 -e ASPNETCORE_URLS=http://+:80 -e ASPNETCORE_ENVIRONMENT=Development mywebapp /app/myWebApp --no-launch-profile
 ````
