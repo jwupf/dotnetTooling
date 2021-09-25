@@ -13,13 +13,13 @@ You need to build the final container with your own user to have the GIS/UID mat
 If you are lazy, and you only have one user on your system and if that user/group has a ID of 1000 or if you are on windows(not inside a WSL container), you can run:
 
 ````pwsh
-docker build -t dotnet_toolchain -f Dockerfile .
+docker build -t dotnet_toolchain -f Dockerfile --target base .
 ````
 
 If you run the command inside a linux environment I highly suggest to run it like this:
 
 ````pwsh
-docker build -f Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain  .
+docker build -f Dockerfile --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain --target base .
 ````
 
 ### Using the tool chain
