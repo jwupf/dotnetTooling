@@ -1,14 +1,29 @@
-# About this example
+# Docker based toolchain for .net 6
 
-This repository sums up stuff I learned about .net 6.0 and needed infrastructure. The code inside this repository are examples to highlight some things, but are not meant to be used for anything usefull. I might add more complex examples later , if they are needed to bring a point across. 
+This repository sums up stuff I learned about creating toolchains for .net 6.0 unsing Docker and needed infrastructure. The code inside this repository are examples to highlight some things, but are not meant to be used for anything usefull. I might add more complex examples later , if they are needed to bring a point across. 
 
 If not specified otherwise, commands are executed in the root directory of the repository.
 
 Right now I will focus on setting infrastructure up, so the code will be bare bones.
 
-## Building tool chain
+**Once everything is working I'll have to create a script that wrapps the horrible docker calls. Do not get scarred by them, they are just long.**
 
-### Build the tool chain
+## Why to use Docker(or general container) for hosting a toolchain
+
+Why Docker in general:
+* product bundled inside a image with all required packages/configuration
+
+Why toolchain:
+It allows to describe:
+
+* the required tools
+* required processes
+
+It gives you the ability to run a standardised toolchain with all the required packages in an isolated environment. The environment is described in a Dockerfile and realized by providing a image.  
+
+Why the clean world view is not always working and how to make it still work, see the following chapters as well.
+
+## Creating a tool chain
 
 To be able to use files, created by the toolchain, we have to make sure that the file system permission of created files are correct. Those permission are given to a user, a group and others. User and group are identified by an ID. On a local system group ID's usually start at '1' and user ID's at 1000. Sometimes they are different. To make sure that that ID on your PC and ID's used inside containers match you have to create images that are adapted to your local circumstances.
 
@@ -24,7 +39,7 @@ If you run the command inside a linux environment I highly suggest to run it lik
 docker image build --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t dotnet_toolchain --target base -f _toolchain/Dockerfile _toolchain/
 ````
 
-This commadn will ensure that the user running programs inside a container will have the correct ID's and thus sets file permissions in a usable way.
+This command will ensure that the user running programs inside a container will have the correct ID's and thus sets file permissions in a usable way.
 
 ### Debugging failing builds
 
@@ -130,9 +145,46 @@ The you can kill that container with:
 docker kill myServerApp
 ````
 
+ 
+
 ### Example: a web app with https
 
-t.b.d.
+#### Development
+
+By todays standards, using http without encryption is folish. Good for learning the basics in a personal lab environment. But as soon as other people use it more care has to be taken. For that http is wrapped in a secure channel and together they form https. 
+
+To not store the certificate in plain text on a hard drive, it is encrypted using a passphrase. And now, every time you want to use the certificate to encrypt your connection, you need that password. Usually you need it only on program start, thus a user prompt or temporary environment variable can be used. But for development that is impractical.
+
+For development purpose you create a developer certificate, encrypt it and use that. To help automate this, you need a ID that can be used by the automation to link certificate and password. Thus first you have to create a ID in your project:
+
+````pwsh
+docker run --rm -v "$(pwd):/work" -w /work dotnet_toolchain dotnet user-secrets init
+````
+
+Now you can create a certificate for local development(for now it will be in the root folder of the project, not good for any kind of deployment):
+
+````pwsh
+docker run --rm -v "$(pwd):/work" -w /work dotnet_toolchain dotnet dev-certs https -ep aspnetapp.pfx -p "scarrypassword"
+````
+
+Running the RestAPI server:
+
+````pwsh
+docker run -it --rm -v "$(pwd):/src" -w /src -p 8000:80 -p 8001:443 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTP_PORT=8000 -e ASPNETCORE_HTTPS_PORT=8001 -e ASPNETCORE_ENVIRONMENT=Development -e ASPNETCORE_Kestrel__Certificates__Default__Password="scarrypassword" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/src/aspnetapp.pfx dotnet_toolchain dotnet run --no-launch-profile
+````
+
+Set environment variables:
+
+* ASPNETCORE_URLS - configures the urls the server listens to
+* ASPNETCORE_HTTP_PORT - configures the HTTP port
+* ASPNETCORE_HTTPS_PORT - configures the HTTPS port
+* ASPNETCORE_ENVIRONMENT - The environment to use(our example has non configured ...?)
+* ASPNETCORE_Kestrel__Certificates__Default__Path - path for Kestrel(http[s] server) to find our certificate
+* ASPNETCORE_Kestrel__Certificates__Default__Password - password of the used certificate
+
+Command line options for ``dotnet run``:
+
+* --no-launch-profile - make sure to start without any profile and use the settings from the environment variables
 
 ## Using the tool chain to create a product image in developer mode
 
